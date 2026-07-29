@@ -33,8 +33,11 @@ jobs:
         with:
           ref: main
 
-      - name: Install meson
-        run: sudo pacman -Syu --noconfirm meson
+      - name: Installing Meson
+        run: |
+          python -m pip --version || pacman -Sy --needed --noconfirm python-pip
+          python -m pip install --upgrade --break-system-packages 'meson>=1.3.0'
+          meson --version
 
       - name: Loading clang root
         id: clang_root_cache
