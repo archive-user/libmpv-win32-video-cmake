@@ -188,6 +188,7 @@ jobs:
           key: ${{ secrets.CACHE_VERSION }}-clang-${{ matrix.bit }}_toolchain-${{ github.run_id }}
 
       - name: Saving release_${{ matrix.bit }} cache
+        if: always()
         uses: actions/cache/save@main
         with:
           path: release_${{ matrix.bit }}
