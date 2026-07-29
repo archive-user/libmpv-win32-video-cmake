@@ -116,6 +116,35 @@ jobs:
           echo "Clone done. Size:"
           du -sh src_packages/llvm
 
+      - name: Pre-clone mingw-w64
+        if: ${{ steps.x86_64_cache.outputs.cache-matched-key == '' || steps.i686_cache.outputs.cache-matched-key == '' || steps.aarch64_cache.outputs.cache-matched-key == '' || steps.x86_64_v3_cache.outputs.cache-matched-key == '' }}
+        run: |
+          if [ -d src_packages/mingw-w64/.git ]; then
+            echo "mingw-w64 already exists, skipping pre-clone"
+            exit 0
+          fi
+          echo "Pre-cloning mingw-w64 to avoid CMake ExternalProject download failure..."
+          echo "Testing git connectivity to GitHub..."
+          git ls-remote --heads https://github.com/mingw-w64/mingw-w64.git master | head -3 || {
+            echo "WARNING: git ls-remote failed, trying clone anyway..."
+          }
+          echo "Cloning mingw-w64 (shallow, depth=1)..."
+          GIT_SSL_NO_VERIFY=1 git clone --depth=1 --progress \
+            https://github.com/mingw-w64/mingw-w64.git \
+            src_packages/mingw-w64 || {
+            echo "SSL-less clone failed, retrying with full flags..."
+            git -c http.sslVerify=false clone --depth=1 --progress \
+              https://github.com/mingw-w64/mingw-w64.git \
+              src_packages/mingw-w64 || {
+              echo "Shallow clone failed, retrying with full clone..."
+              git -c http.sslVerify=false clone --progress \
+                https://github.com/mingw-w64/mingw-w64.git \
+                src_packages/mingw-w64
+            }
+          }
+          echo "Clone done. Size:"
+          du -sh src_packages/mingw-w64
+
       - name: Building LLVM with IR Profile Instrumentation
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
         run: |
