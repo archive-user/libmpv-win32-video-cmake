@@ -211,13 +211,15 @@ jobs:
           llvm_build_dir=$(find build_x86_64/toolchain -maxdepth 5 -type d -name "llvm-libcxx-build" 2>/dev/null)
           if [ -n "$llvm_build_dir" ]; then
             echo "Directory: $llvm_build_dir"
-            ls -la "$llvm_build_dir"/*.log 2>/dev/null || echo "(no .log files in build dir)"
-            for f in "$llvm_build_dir"/*.log 2>/dev/null; do
+            ls -la "$llvm_build_dir"/*.log >/dev/null 2>&1 || echo "(no .log files in build dir)"
+            shopt -s nullglob
+            for f in "$llvm_build_dir"/*.log; do
               if [ -f "$f" ]; then
                 echo "--- $f (last 120 lines) ---"
                 tail -120 "$f"
               fi
             done
+            shopt -u nullglob
           else
             echo "llvm-libcxx-build directory not found"
           fi
@@ -253,14 +255,16 @@ jobs:
             fi
           done
           echo "=== llvm build dir .log files ==="
+          shopt -s nullglob
           for d in $(find build_x86_64_v3/toolchain -maxdepth 5 -type d -name "*-build" 2>/dev/null); do
-            for f in "$d"/*.log 2>/dev/null; do
+            for f in "$d"/*.log; do
               if [ -f "$f" ] && [ -s "$f" ]; then
                 echo "--- $f (last 120 lines) ---"
                 tail -120 "$f"
               fi
             done
           done
+          shopt -u nullglob
 
       - name: Building i686 toolchain
         id: i686_build
@@ -280,6 +284,7 @@ jobs:
           echo "========= Scanning for build/configure errors ========="
           for build_dir in build_x86_64 build_x86_64_v3 build_i686 build_aarch64; do
             echo "--- Scanning $build_dir ---"
+            shopt -s nullglob
             for errlog in $(find "$build_dir" -name "*-configure-err.log" -o -name "*-build-err.log" -o -name "*-build-out.log" 2>/dev/null); do
               if [ -s "$errlog" ]; then
                 echo "=== $errlog ==="
@@ -287,13 +292,14 @@ jobs:
               fi
             done
             for d in $(find "$build_dir" -maxdepth 5 -type d -name "*-build" 2>/dev/null); do
-              for f in "$d"/*.log 2>/dev/null; do
+              for f in "$d"/*.log; do
                 if [ -f "$f" ] && [ -s "$f" ]; then
                   echo "=== $f (last 100 lines) ==="
                   tail -100 "$f"
                 fi
               done
             done
+            shopt -u nullglob
           done
 
       - name: PGO training with shaderc
