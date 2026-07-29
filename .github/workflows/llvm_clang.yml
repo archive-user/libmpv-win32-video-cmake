@@ -181,48 +181,59 @@ jobs:
         id: x86_64_build
         run: |
           cmake -DTARGET_ARCH=x86_64-w64-mingw32 -DLLVM_ENABLE_PGO=GEN -DCOMPILER_TOOLCHAIN=clang -DCMAKE_INSTALL_PREFIX=$PWD/clang_root -DMINGW_INSTALL_PREFIX=$PWD/build_x86_64/x86_64-w64-mingw32 -DSINGLE_SOURCE_LOCATION=$PWD/src_packages -DRUSTUP_LOCATION=$PWD/clang_root/install_rustup -G Ninja -B build_x86_64 -S $PWD
-          ninja -C build_x86_64 llvm-clang
-
-      - name: Dump x86_64 build logs (on failure)
-        if: ${{ failure() && steps.x86_64_build.outcome == 'failure' }}
-        run: |
-          echo "=== x86_64 configure error logs ==="
-          for f in $(find build_x86_64/toolchain -name "*-configure-err.log" 2>/dev/null); do
-            if [ -s "$f" ]; then
-              echo "--- $f ---"
-              tail -120 "$f"
-            fi
-          done
-          echo "=== x86_64 build error logs ==="
-          for f in $(find build_x86_64/toolchain -name "*-build-err.log" 2>/dev/null); do
-            if [ -s "$f" ]; then
-              echo "--- $f ---"
-              tail -120 "$f"
-            fi
-          done
-          echo "=== x86_64 build output logs (stdout) ==="
-          for f in $(find build_x86_64/toolchain -name "*-build-out.log" 2>/dev/null); do
-            if [ -s "$f" ]; then
-              echo "--- $f ---"
-              tail -120 "$f"
-            fi
-          done
-          echo "=== llvm-libcxx build dir contents ==="
-          llvm_build_dir=$(find build_x86_64/toolchain -maxdepth 5 -type d -name "llvm-libcxx-build" 2>/dev/null)
-          if [ -n "$llvm_build_dir" ]; then
-            echo "Directory: $llvm_build_dir"
-            ls -la "$llvm_build_dir"/*.log >/dev/null 2>&1 || echo "(no .log files in build dir)"
-            shopt -s nullglob
-            for f in "$llvm_build_dir"/*.log; do
-              if [ -f "$f" ]; then
-                echo "--- $f (last 120 lines) ---"
-                tail -120 "$f"
-              fi
+          ninja -C build_x86_64 llvm-clang || {
+            rc=$?
+            echo ""
+            echo "==================== BUILD FAILED - DUMPING LOGS ===================="
+            echo "=== x86_64 configure error logs ==="
+            for f in $(find build_x86_64/toolchain -name "*-configure-err.log" 2>/dev/null); do
+              if [ -s "$f" ]; then echo "--- $f ---"; tail -120 "$f"; fi
             done
-            shopt -u nullglob
-          else
-            echo "llvm-libcxx-build directory not found"
-          fi
+            echo "=== x86_64 build error logs (stderr) ==="
+            for f in $(find build_x86_64/toolchain -name "*-build-err.log" 2>/dev/null); do
+              if [ -s "$f" ]; then echo "--- $f ---"; tail -120 "$f"; fi
+            done
+            echo "=== x86_64 build output logs (stdout) ==="
+            for f in $(find build_x86_64/toolchain -name "*-build-out.log" 2>/dev/null); do
+              if [ -s "$f" ]; then echo "--- $f ---"; tail -120 "$f"; fi
+            done
+            echo "=== llvm-libcxx stamp dir ==="
+            stamp_dir=$(find build_x86_64/toolchain -maxdepth 6 -type d -name "llvm-libcxx-stamp" 2>/dev/null)
+            if [ -n "$stamp_dir" ]; then
+              echo "STAMP: $stamp_dir"
+              ls -la "$stamp_dir/"
+              echo ""
+              shopt -s nullglob
+              for f in "$stamp_dir"/*.log; do
+                if [ -s "$f" ]; then echo "--- $f (last 200 lines) ---"; tail -200 "$f"; else echo "--- $f (empty) ---"; fi
+              done
+              shopt -u nullglob
+            else
+              echo "llvm-libcxx stamp dir not found"
+            fi
+            echo ""
+            echo "=== llvm-libcxx build dir ==="
+            llvm_build_dir=$(find build_x86_64/toolchain -maxdepth 6 -type d -name "llvm-libcxx-build" 2>/dev/null)
+            if [ -n "$llvm_build_dir" ]; then
+              echo "BUILD: $llvm_build_dir"
+              ls -la "$llvm_build_dir/" 2>/dev/null | head -30
+              WORKSPACE="$PWD"
+              if [ -f "$llvm_build_dir/build.ninja" ]; then
+                echo "build.ninja exists ($(wc -l < "$llvm_build_dir/build.ninja") lines)"
+                echo ""
+                echo "=== Attempting manual ninja -v via exec wrapper (first 200 lines) ==="
+                "$WORKSPACE/build_x86_64/exec" LTO=0 ninja -v -j1 -C "$llvm_build_dir" 2>&1 | head -200 || true
+              else
+                echo "build.ninja NOT FOUND! Checking for CMakeCache.txt..."
+                if [ -f "$llvm_build_dir/CMakeCache.txt" ]; then
+                  grep -E "CMAKE_C_COMPILER:|CMAKE_CXX_COMPILER:|LLVM_ENABLE_RUNTIMES" "$llvm_build_dir/CMakeCache.txt" | head -10
+                fi
+              fi
+            else
+              echo "llvm-libcxx-build directory not found"
+            fi
+            exit $rc
+          }
 
       - name: Building x86_64-v3 toolchain
         id: x86_64_v3_build
