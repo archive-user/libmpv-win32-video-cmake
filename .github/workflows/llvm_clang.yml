@@ -119,6 +119,12 @@ jobs:
           }
           echo "Removing .git to prevent CMake git checks..."
           rm -rf src_packages/llvm/.git
+          echo "Patching Unwind-seh.cpp for newer mingw-w64 scoped-enum EXCEPTION_DISPOSITION..."
+          sed -i 's|return 4 /\* ExceptionExecuteHandler in mingw \*/|return EXCEPTION_DISPOSITION(4) /\* ExceptionExecuteHandler in mingw \*/|' \
+            src_packages/llvm/libunwind/src/Unwind-seh.cpp
+          sed -i 's|case 4 /\*ExceptionExecuteHandler\*/:|case EXCEPTION_DISPOSITION(4) /\*ExceptionExecuteHandler\*/:|' \
+            src_packages/llvm/libunwind/src/Unwind-seh.cpp
+          echo "Patch applied."
           echo "Clone done. Size:"
           du -sh src_packages/llvm
 
