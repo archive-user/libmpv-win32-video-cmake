@@ -32,6 +32,7 @@ jobs:
         bit: [i686, x86_64, x86_64_v3, aarch64]
     env:
       BIT: ${{ matrix.bit }}
+      GIT_SSL_NO_VERIFY: "true"
     container:
       image: docker://ghcr.io/shinchiro/archlinux:latest
     outputs:
@@ -59,6 +60,7 @@ jobs:
           git config --global rebase.autoStash true
           git config --global fetch.prune true
           git config --global --add safe.directory $PWD
+          git config --global http.sslVerify false
 
       - uses: actions/checkout@main
 

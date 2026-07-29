@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+    env:
+      GIT_SSL_NO_VERIFY: "true"
     container:
         image: docker://ghcr.io/shinchiro/archlinux:latest
     steps:
@@ -30,6 +32,7 @@ jobs:
           git config --global fetch.prune true
           git config --global --add safe.directory $PWD
           git config --global protocol.version 2
+          git config --global http.sslVerify false
 
       - uses: actions/checkout@main
 
@@ -144,6 +147,25 @@ jobs:
           }
           echo "Clone done. Size:"
           du -sh src_packages/mingw-w64
+
+      - name: Pre-clone cppwinrt
+        if: ${{ steps.x86_64_cache.outputs.cache-matched-key == '' || steps.i686_cache.outputs.cache-matched-key == '' || steps.aarch64_cache.outputs.cache-matched-key == '' || steps.x86_64_v3_cache.outputs.cache-matched-key == '' }}
+        run: |
+          if [ -d src_packages/cppwinrt/.git ]; then
+            echo "cppwinrt already exists, skipping pre-clone"
+            exit 0
+          fi
+          echo "Pre-cloning cppwinrt to avoid CMake ExternalProject download failure..."
+          git clone --depth=1 --progress \
+            https://github.com/microsoft/cppwinrt.git \
+            src_packages/cppwinrt || {
+            echo "Shallow clone failed, retrying with full clone..."
+            git clone --progress \
+              https://github.com/microsoft/cppwinrt.git \
+              src_packages/cppwinrt
+          }
+          echo "Clone done. Size:"
+          du -sh src_packages/cppwinrt
 
       - name: Building LLVM with IR Profile Instrumentation
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
