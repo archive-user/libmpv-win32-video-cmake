@@ -46,7 +46,7 @@ ExternalProject_Add(ffmpeg
         --pkg-config-flags=--static
         --enable-cross-compile
 
-        --disable-gpl
+        --enable-gpl
         --disable-nonfree
         --enable-version3
         --enable-static
@@ -271,6 +271,19 @@ ExternalProject_Add(ffmpeg
 
         --enable-filter=overlay
         --enable-filter=equalizer
+        --enable-filter=vflip
+        --enable-filter=hflip
+        --enable-filter=transpose
+        --enable-filter=rotate
+        --enable-filter=crop
+        --enable-filter=scale
+        --enable-filter=format
+        --enable-filter=fps
+        --enable-filter=minterpolate
+        --enable-filter=trim
+        --enable-filter=setpts
+        --enable-filter=null
+        --enable-filter=aecho
 
         --enable-protocol=async
         --enable-protocol=cache
