@@ -65,7 +65,7 @@ jobs:
           ref: main
 
       - name: Install meson
-        run: sudo pacman -S --noconfirm meson
+        run: sudo pacman -Syu --noconfirm meson
 
       - name: Loading clang sysroot cache
         uses: actions/cache/restore@main

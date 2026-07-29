@@ -34,7 +34,7 @@ jobs:
           ref: main
 
       - name: Install meson
-        run: sudo pacman -S --noconfirm meson
+        run: sudo pacman -Syu --noconfirm meson
 
       - name: Loading clang root
         id: clang_root_cache
