@@ -34,7 +34,7 @@ jobs:
           ref: main
 
       - name: Install meson
-        run: pip install --break-system-packages 'meson>=1.3.0'
+        run: sudo pacman -S --noconfirm meson
 
       - name: Loading clang root
         id: clang_root_cache
