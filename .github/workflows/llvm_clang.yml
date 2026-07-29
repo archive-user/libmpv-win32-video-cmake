@@ -197,9 +197,30 @@ jobs:
           for f in $(find build_x86_64/toolchain -name "*-build-err.log" 2>/dev/null); do
             if [ -s "$f" ]; then
               echo "--- $f ---"
-              tail -80 "$f"
+              tail -120 "$f"
             fi
           done
+          echo "=== x86_64 build output logs (stdout) ==="
+          for f in $(find build_x86_64/toolchain -name "*-build-out.log" 2>/dev/null); do
+            if [ -s "$f" ]; then
+              echo "--- $f ---"
+              tail -120 "$f"
+            fi
+          done
+          echo "=== llvm-libcxx build dir contents ==="
+          llvm_build_dir=$(find build_x86_64/toolchain -maxdepth 5 -type d -name "llvm-libcxx-build" 2>/dev/null)
+          if [ -n "$llvm_build_dir" ]; then
+            echo "Directory: $llvm_build_dir"
+            ls -la "$llvm_build_dir"/*.log 2>/dev/null || echo "(no .log files in build dir)"
+            for f in "$llvm_build_dir"/*.log 2>/dev/null; do
+              if [ -f "$f" ]; then
+                echo "--- $f (last 120 lines) ---"
+                tail -120 "$f"
+              fi
+            done
+          else
+            echo "llvm-libcxx-build directory not found"
+          fi
 
       - name: Building x86_64-v3 toolchain
         id: x86_64_v3_build
@@ -217,12 +238,28 @@ jobs:
               tail -120 "$f"
             fi
           done
-          echo "=== x86_64_v3 build error logs ==="
+          echo "=== x86_64_v3 build error logs (stderr) ==="
           for f in $(find build_x86_64_v3/toolchain -name "*-build-err.log" 2>/dev/null); do
             if [ -s "$f" ]; then
               echo "--- $f ---"
-              tail -80 "$f"
+              tail -120 "$f"
             fi
+          done
+          echo "=== x86_64_v3 build output logs (stdout) ==="
+          for f in $(find build_x86_64_v3/toolchain -name "*-build-out.log" 2>/dev/null); do
+            if [ -s "$f" ]; then
+              echo "--- $f ---"
+              tail -120 "$f"
+            fi
+          done
+          echo "=== llvm build dir .log files ==="
+          for d in $(find build_x86_64_v3/toolchain -maxdepth 5 -type d -name "*-build" 2>/dev/null); do
+            for f in "$d"/*.log 2>/dev/null; do
+              if [ -f "$f" ] && [ -s "$f" ]; then
+                echo "--- $f (last 120 lines) ---"
+                tail -120 "$f"
+              fi
+            done
           done
 
       - name: Building i686 toolchain
@@ -243,11 +280,19 @@ jobs:
           echo "========= Scanning for build/configure errors ========="
           for build_dir in build_x86_64 build_x86_64_v3 build_i686 build_aarch64; do
             echo "--- Scanning $build_dir ---"
-            for errlog in $(find "$build_dir" -name "*-configure-err.log" -o -name "*-build-err.log" 2>/dev/null); do
+            for errlog in $(find "$build_dir" -name "*-configure-err.log" -o -name "*-build-err.log" -o -name "*-build-out.log" 2>/dev/null); do
               if [ -s "$errlog" ]; then
                 echo "=== $errlog ==="
                 tail -100 "$errlog"
               fi
+            done
+            for d in $(find "$build_dir" -maxdepth 5 -type d -name "*-build" 2>/dev/null); do
+              for f in "$d"/*.log 2>/dev/null; do
+                if [ -f "$f" ] && [ -s "$f" ]; then
+                  echo "=== $f (last 100 lines) ==="
+                  tail -100 "$f"
+                fi
+              done
             done
           done
 
