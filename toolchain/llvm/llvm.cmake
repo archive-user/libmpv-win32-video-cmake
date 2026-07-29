@@ -1,10 +1,7 @@
 set(clang_version "19")
 ExternalProject_Add(llvm
-    GIT_REPOSITORY https://github.com/llvm/llvm-project.git
+    DOWNLOAD_COMMAND ""
     SOURCE_DIR ${SOURCE_LOCATION}
-    GIT_SHALLOW ON
-    GIT_PROGRESS ON
-    GIT_TAG release/19.x
     LIST_SEPARATOR ,
     CONFIGURE_COMMAND ${EXEC} CONF=1 PATH=$O_PATH cmake -H<SOURCE_DIR>/llvm -B<BINARY_DIR>
         -G Ninja

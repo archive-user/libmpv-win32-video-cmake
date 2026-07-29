@@ -93,14 +93,21 @@ jobs:
         continue-on-error: true
         run: ${{ github.event.inputs.command }}
 
-      - name: Test git and clean stale sources
+      - name: Install git and ca-certificates
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
         run: |
-          git --version
-          echo "Testing git connectivity to GitHub..."
-          git ls-remote --heads https://github.com/llvm/llvm-project.git release/19.x | head -5
-          echo "Cleaning stale LLVM source and build directories..."
-          rm -rf src_packages/llvm build_x86_64/toolchain/llvm-prefix
+          pacman -Sy --needed --noconfirm git ca-certificates
+
+      - name: Clone LLVM manually
+        if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
+        run: |
+          rm -rf src_packages/llvm
+          echo "Cloning LLVM (shallow, depth=1, branch release/19.x)..."
+          git clone --depth=1 --branch=release/19.x --progress \
+            https://github.com/llvm/llvm-project.git \
+            src_packages/llvm
+          echo "Clone done. Size:"
+          du -sh src_packages/llvm
 
       - name: Building LLVM with IR Profile Instrumentation
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
