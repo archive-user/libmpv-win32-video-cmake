@@ -97,8 +97,11 @@ jobs:
         run: ${{ github.event.inputs.command }}
 
       - name: Clone LLVM manually
-        if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
         run: |
+          if [ -d src_packages/llvm/runtimes ]; then
+            echo "src_packages/llvm/runtimes already exists, skipping clone"
+            exit 0
+          fi
           rm -rf src_packages/llvm
           git --version
           echo "Testing git connectivity to GitHub..."
