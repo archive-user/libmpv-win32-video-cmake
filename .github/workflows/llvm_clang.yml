@@ -93,19 +93,24 @@ jobs:
         continue-on-error: true
         run: ${{ github.event.inputs.command }}
 
-      - name: Install git and ca-certificates
-        if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
-        run: |
-          pacman -Sy --needed --noconfirm git ca-certificates
-
       - name: Clone LLVM manually
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
         run: |
           rm -rf src_packages/llvm
+          git --version
+          echo "Testing git connectivity to GitHub..."
+          git ls-remote --heads https://github.com/llvm/llvm-project.git release/19.x | head -3 || {
+            echo "WARNING: git ls-remote failed, trying clone anyway..."
+          }
           echo "Cloning LLVM (shallow, depth=1, branch release/19.x)..."
-          git clone --depth=1 --branch=release/19.x --progress \
+          GIT_SSL_NO_VERIFY=1 git clone --depth=1 --branch=release/19.x --progress \
             https://github.com/llvm/llvm-project.git \
-            src_packages/llvm
+            src_packages/llvm || {
+            echo "SSL-less clone failed, trying with full flags..."
+            git -c http.sslVerify=false clone --depth=1 --branch=release/19.x --progress \
+              https://github.com/llvm/llvm-project.git \
+              src_packages/llvm
+          }
           echo "Clone done. Size:"
           du -sh src_packages/llvm
 
