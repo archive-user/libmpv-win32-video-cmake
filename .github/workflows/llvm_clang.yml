@@ -93,6 +93,15 @@ jobs:
         continue-on-error: true
         run: ${{ github.event.inputs.command }}
 
+      - name: Test git and clean stale sources
+        if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
+        run: |
+          git --version
+          echo "Testing git connectivity to GitHub..."
+          git ls-remote --heads https://github.com/llvm/llvm-project.git release/19.x | head -5
+          echo "Cleaning stale LLVM source and build directories..."
+          rm -rf src_packages/llvm build_x86_64/toolchain/llvm-prefix
+
       - name: Building LLVM with IR Profile Instrumentation
         if: ${{ steps.clang_root_cache.outputs.cache-matched-key == '' }}
         run: |
