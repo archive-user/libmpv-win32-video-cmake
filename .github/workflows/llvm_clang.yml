@@ -111,6 +111,8 @@ jobs:
               https://github.com/llvm/llvm-project.git \
               src_packages/llvm
           }
+          echo "Removing .git to prevent CMake git checks..."
+          rm -rf src_packages/llvm/.git
           echo "Clone done. Size:"
           du -sh src_packages/llvm
 
