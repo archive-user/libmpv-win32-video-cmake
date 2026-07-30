@@ -12,6 +12,7 @@ ExternalProject_Add(llvm-libcxx
         -DCMAKE_C_COMPILER=${TARGET_ARCH}-clang
         -DCMAKE_CXX_COMPILER=${TARGET_ARCH}-clang++
         -DCMAKE_SYSTEM_NAME=Windows
+        -DCMAKE_CXX_FLAGS=-Wno-enum-constexpr-conversion
         -DCMAKE_AR=${CMAKE_INSTALL_PREFIX}/bin/llvm-ar
         -DCMAKE_RANLIB=${CMAKE_INSTALL_PREFIX}/bin/llvm-ranlib
         -DCMAKE_C_COMPILER_WORKS=1

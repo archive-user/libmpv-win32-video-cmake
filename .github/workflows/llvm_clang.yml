@@ -120,10 +120,31 @@ jobs:
           echo "Removing .git to prevent CMake git checks..."
           rm -rf src_packages/llvm/.git
           echo "Patching Unwind-seh.cpp for newer mingw-w64 scoped-enum EXCEPTION_DISPOSITION..."
-          sed -i 's|return 4 /\* ExceptionExecuteHandler in mingw \*/|return EXCEPTION_DISPOSITION(4) /\* ExceptionExecuteHandler in mingw \*/|' \
-            src_packages/llvm/libunwind/src/Unwind-seh.cpp
-          sed -i 's|case 4 /\*ExceptionExecuteHandler\*/:|case EXCEPTION_DISPOSITION(4) /\*ExceptionExecuteHandler\*/:|' \
-            src_packages/llvm/libunwind/src/Unwind-seh.cpp
+          python3 -c "
+import re
+src = 'src_packages/llvm/libunwind/src/Unwind-seh.cpp'
+with open(src) as f: c = f.read()
+# 1) return 4 -> static_cast<EXCEPTION_DISPOSITION>(4)
+pat_return = 'return 4 /* ExceptionExecuteHandler in mingw */'
+repl_return = 'return static_cast<EXCEPTION_DISPOSITION>(4) /* ExceptionExecuteHandler in mingw */'
+c = c.replace(pat_return, repl_return)
+# 2) case 4 in switch -> default + if check (avoids enum-constexpr-conversion error)
+pat_switch = (
+    '  case 4 /*ExceptionExecuteHandler*/:\n'
+    '    return phase2 ? _URC_INSTALL_CONTEXT : _URC_HANDLER_FOUND;\n'
+    '  default:\n'
+    '    return phase2 ? _URC_FATAL_PHASE2_ERROR : _URC_FATAL_PHASE1_ERROR;'
+)
+repl_switch = (
+    '  default:\n'
+    '    if ((int)ms_act == 4 /*ExceptionExecuteHandler*/)\n'
+    '      return phase2 ? _URC_INSTALL_CONTEXT : _URC_HANDLER_FOUND;\n'
+    '    return phase2 ? _URC_FATAL_PHASE2_ERROR : _URC_FATAL_PHASE1_ERROR;'
+)
+c = c.replace(pat_switch, repl_switch)
+with open(src, 'w') as f: f.write(c)
+print('Patch: returns=' + str(c.count('static_cast<EXCEPTION_DISPOSITION>(4)')) + ' switch=' + str(c.count('(int)ms_act == 4')))
+          "
           echo "Patch applied."
           echo "Clone done. Size:"
           du -sh src_packages/llvm
